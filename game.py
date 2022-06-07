@@ -1,6 +1,9 @@
-import pgzrun
-import sys
 import random
+import sys
+
+import pgzrun
+
+from settings import *
 
 mod = sys.modules['__main__']
 
@@ -16,11 +19,21 @@ def draw():
 
 
 def draw_game_run():
-    mod.screen.blit("background.jpg", (0, 0))
+    mod.screen.blit(BACKGROUND_IMAGE, (0, 0))
     paddle.draw()
     ball.draw()
     for bar in bars_list:
         bar.draw()
+    draw_menu()
+
+
+def draw_menu():
+    draw_ball_lives()
+
+
+def draw_ball_lives():
+    mod.screen.draw.text(f"{lives}", (750, 5), color=COLOR_WHITE_BLUE, fontsize=MENU_TEXT_SIZE)
+    mod.screen.blit(BALL_IMAGE, (770, 5))
 
 
 def draw_game_over():
@@ -43,7 +56,7 @@ def update():
     update_ball()
     for bar in bars_list:
         if ball.colliderect(bar):
-            bars_list.remove(bar)
+            bar_on_hit(bar, BAR_COLORS_LIST)
             ball_y_speed *= -1
             accelerate_ball()
 
@@ -62,6 +75,13 @@ def update():
         ball.y = 300
         paddle.x = 120
         paddle.y = 420
+
+
+def bar_on_hit(hit_bar, color_list):
+    if hit_bar.image == color_list[-1]:
+        bars_list.remove(hit_bar)
+    else:
+        hit_bar.image = color_list[color_list.index(hit_bar.image) + 1]
 
 
 def accelerate_ball():
@@ -102,7 +122,7 @@ def set_actor(image: str, x: int, y: int) -> mod.Actor:
     return actor
 
 
-def place_bars():
+def place_bars(coloured_box_list):
     """
     Create list of all bars.
     :return:
@@ -123,8 +143,6 @@ def place_bars():
             bars_.append(bar)
         return bars_
 
-    coloured_box_list = ["element_blue_rectangle_glossy.png", "element_green_rectangle_glossy.png",
-                         "element_red_rectangle_glossy.png"]
     x = 120
     y = 100
     bars = []
@@ -135,25 +153,10 @@ def place_bars():
     return bars
 
 
-TITLE = "Arkanoid Alena Reshetnikova project"
-WIDTH = 800
-HEIGHT = 500
-game_status = 'active'
+paddle = set_actor(PADDLE_IMAGE, 120, 420)
+ball = set_actor(BALL_IMAGE, 30, 300)
+game_over = set_actor(GAME_OVER_IMAGE, WIDTH // 2, HEIGHT // 2)
 
-paddle_speed = 7
-lives = 3
-
-# ускорение шара, предел скорости шара
-ball_x_speed = 2
-ball_y_speed = 2
-ball_acceleration = 1.2
-ball_speed_limit = 6
-
-paddle = set_actor("paddleblue.png", 120, 420)
-ball = set_actor("ballblue.png", 30, 300)
-bar = set_actor("element_blue_rectangle_glossy.png", 120, 100)
-game_over = set_actor("game_over.jpg", WIDTH // 2, HEIGHT // 2)
-
-bars_list = place_bars()
+bars_list = place_bars(BAR_COLORS_LIST)
 
 pgzrun.go()
