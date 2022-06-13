@@ -16,6 +16,8 @@ def draw():
         draw_game_run()
     if game_status == 'game_over':
         draw_game_over()
+    if game_status == "player_won":
+        draw_you_won()
 
 
 def draw_game_run():
@@ -25,6 +27,12 @@ def draw_game_run():
     for bar in bars_list:
         bar.draw()
     draw_menu()
+
+
+def draw_you_won():
+    mod.screen.clear()
+    mod.screen.blit("background.jpg", (0, 0))
+    you_won.draw()
 
 
 def draw_menu():
@@ -59,7 +67,8 @@ def update():
             bar_on_hit(bar, BAR_COLORS_LIST)
             ball_y_speed *= -1
             accelerate_ball()
-
+    if bars_list == []:
+        game_status = 'player_won'
     if paddle.colliderect(ball):
         ball_y_speed *= -1
         # randomly move ball left or right on hit
@@ -68,13 +77,15 @@ def update():
             ball_x_speed *= -1
     if ball.y > paddle.y:
         lives -= 1
+        ball_x_speed = 2
+        ball_y_speed = 2
         # global game_status
         if lives == 0:
             game_status = 'game_over'
-        ball.x = 30
-        ball.y = 300
-        paddle.x = 120
-        paddle.y = 420
+        ball.x = WIDTH // 2
+        ball.y = HEIGHT // 2 +100
+        paddle.x = WIDTH // 2
+        paddle.y = HEIGHT+100 // 2 - 100
 
 
 def bar_on_hit(hit_bar, color_list):
@@ -135,7 +146,7 @@ def place_bars(coloured_box_list):
         """
         bar_x = x
         bar_y = y
-        for i in range(8):
+        for i in range(11):
             bar = mod.Actor(image)
             bar.x = bar_x
             bar.y = bar_y
@@ -143,7 +154,7 @@ def place_bars(coloured_box_list):
             bars_.append(bar)
         return bars_
 
-    x = 120
+    x = 50
     y = 100
     bars = []
 
@@ -153,9 +164,14 @@ def place_bars(coloured_box_list):
     return bars
 
 
-paddle = set_actor(PADDLE_IMAGE, 120, 420)
-ball = set_actor(BALL_IMAGE, 30, 300)
+# TODO 1. 1. Add sounds, refactor ball reflections after hit
+# TODO 2. Add levels, save them to separate file with JSON structure
+
+
+paddle = set_actor(PADDLE_IMAGE, WIDTH // 2 , HEIGHT+100 // 2 - 100)
+ball = set_actor(BALL_IMAGE, WIDTH // 2 , HEIGHT // 2+100)
 game_over = set_actor(GAME_OVER_IMAGE, WIDTH // 2, HEIGHT // 2)
+you_won = set_actor(YOU_WON_IMAGE, WIDTH // 2, HEIGHT // 2)
 
 bars_list = place_bars(BAR_COLORS_LIST)
 
