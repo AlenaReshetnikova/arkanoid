@@ -1,8 +1,9 @@
 import random
 import sys
-
+import os
+import pygame
 import pgzrun
-
+import time
 from settings import *
 
 mod = sys.modules['__main__']
@@ -36,6 +37,7 @@ def draw_you_won():
 
 
 def draw_menu():
+    mod.screen.draw.text(f"M - music", (20, 5), color=COLOR_GRAY, fontsize=MENU_TEXT_SIZE)
     draw_ball_lives()
 
 
@@ -57,9 +59,11 @@ def update():
     """
     global ball_x_speed, ball_y_speed, paddle_speed, ball_acceleration, ball_speed_limit, lives, game_status
     if mod.keyboard.left:
-        paddle.x = paddle.x - paddle_speed
+        move_paddle("left")
     if mod.keyboard.right:
-        paddle.x = paddle.x + paddle_speed
+        move_paddle("right")
+    if mod.keyboard.m:
+        music_on_off()
 
     update_ball()
     for bar in bars_list:
@@ -75,6 +79,7 @@ def update():
         rand = random.randint(0, 1)
         if rand:
             ball_x_speed *= -1
+        sound_common_hit()
     if ball.y > paddle.y:
         lives -= 1
         ball_x_speed = 2
@@ -83,9 +88,31 @@ def update():
         if lives == 0:
             game_status = 'game_over'
         ball.x = WIDTH // 2
-        ball.y = HEIGHT // 2 +100
+        ball.y = HEIGHT // 2 + 100
         paddle.x = WIDTH // 2
-        paddle.y = HEIGHT+100 // 2 - 100
+        paddle.y = HEIGHT + 100 // 2 - 100
+
+
+def move_paddle(direction):
+    if direction == "left":
+        if paddle.left > 0:
+            paddle.x = paddle.x - paddle_speed
+    if direction == "right":
+        if paddle.right <= WIDTH:
+            paddle.x = paddle.x + paddle_speed
+
+
+def music_on_off():
+    global music_status, time_last_key_pressed
+    if time.time() - time_last_key_pressed > 0.3 and BACKGROUND_MUSIC:
+        if music_status == 'on':
+            mod.music.pause()
+            music_status = 'off'
+            time_last_key_pressed = time.time()
+        else:
+            mod.music.unpause()
+            music_status = 'on'
+            time_last_key_pressed = time.time()
 
 
 def bar_on_hit(hit_bar, color_list):
@@ -93,6 +120,11 @@ def bar_on_hit(hit_bar, color_list):
         bars_list.remove(hit_bar)
     else:
         hit_bar.image = color_list[color_list.index(hit_bar.image) + 1]
+    sound_common_hit()
+
+
+def sound_common_hit():
+    mod.sounds.hit_sound.play()
 
 
 def accelerate_ball():
@@ -100,10 +132,12 @@ def accelerate_ball():
     Apply ball acceleration.
     """
     global ball_x_speed, ball_y_speed, ball_acceleration, ball_speed_limit
-    if abs(ball_x_speed * ball_acceleration) <= ball_speed_limit and \
-            abs(ball_y_speed * ball_acceleration) <= ball_speed_limit:
-        ball_y_speed *= ball_acceleration
-        ball_x_speed *= ball_acceleration
+    ball_y_speed_try = round((abs(ball_y_speed) + ball_acceleration) * (ball_y_speed / abs(ball_y_speed)), 2)
+    ball_x_speed_try = round((abs(ball_x_speed) + ball_acceleration) * (ball_x_speed / abs(ball_x_speed)), 2)
+    if abs(ball_y_speed_try) <= ball_speed_limit and abs(ball_x_speed_try) <= ball_speed_limit:
+        ball_y_speed = ball_y_speed_try
+        ball_x_speed = ball_x_speed_try
+        print(ball_x_speed, ball_y_speed, ball_acceleration, ball_speed_limit)
 
 
 def update_ball():
@@ -166,13 +200,22 @@ def place_bars(coloured_box_list):
 
 # TODO 1. 1. Add sounds, refactor ball reflections after hit
 # TODO 2. Add levels, save them to separate file with JSON structure
+# TODO 3. Panel should not leave game area
+# TODO 4. ----Game should create main window in the center of the screen
+# TODO 5. Add key 'M' binding for music control (on/off), show in the top menu, refactor it to play without stop
+# TODO 6. Refactor acceleration - increment should be added, not multipliyed
+# TODO 7. Won / Lose - should stop the game entirely, stop sounds and music
 
 
-paddle = set_actor(PADDLE_IMAGE, WIDTH // 2 , HEIGHT+100 // 2 - 100)
-ball = set_actor(BALL_IMAGE, WIDTH // 2 , HEIGHT // 2+100)
+paddle = set_actor(PADDLE_IMAGE, WIDTH // 2, HEIGHT + 100 // 2 - 100)
+ball = set_actor(BALL_IMAGE, WIDTH // 2, HEIGHT // 2 + 100)
 game_over = set_actor(GAME_OVER_IMAGE, WIDTH // 2, HEIGHT // 2)
 you_won = set_actor(YOU_WON_IMAGE, WIDTH // 2, HEIGHT // 2)
+time_last_key_pressed = time.time()
 
 bars_list = place_bars(BAR_COLORS_LIST)
+if BACKGROUND_MUSIC:
+    mod.music.play(BACKGROUND_MUSIC)
+    mod.music.set_volume(0.5)
 
 pgzrun.go()
